@@ -1,5 +1,11 @@
 # Text to Image Generator
 
+<div align="center">
+  <img src="static/images/thumbnail.png" alt="Text to Image Generator Demo" width="600"/>
+  <br>
+  <em>AI-powered image generation with Stable Diffusion</em>
+</div>
+
 This application uses the FLUX-dev-lora-Vector-Journey model to generate images from text prompts. It features a modern, responsive UI built with Streamlit and uses Stable Diffusion for image generation.
 
 ## Technologies Used
