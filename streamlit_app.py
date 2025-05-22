@@ -7,13 +7,14 @@ import base64
 import time
 import os
 import json
+from datetime import datetime, timedelta
 
 # Model configurations
 MODEL_CONFIGS = {
     "Canopus": {
-        "base_model": "black-forest-labs/FLUX.1-dev",
-        "lora_path": "models/Canopus-Pixar-3D-FluxDev-LoRA.safetensors",
-        "default_prompt": "3d image, cute girl, in the style of Pixar --ar 1:2 --stylize 750, style of Pixarstyle of Pixar 4K : cinematic --ar 68:128 --stylize 750 --v 5.2",
+        "base_model": "HiDream-ai/HiDream-I1-Full",
+        "lora_path": "models/Floating_Head_HiDream_v1_3000.safetensors",
+        "default_prompt": "h3adfl0at 3D floating head of a an old latino man wearing a LA Dodgers baseball cap hat and thick rimmed brown sunglasses with light tinted lenses, he has a thick mustache and looks brooding",
         "use_safetensors": True,
         "is_sdxl": False
     },
@@ -149,15 +150,39 @@ with col2:
             with st.spinner("Loading model..."):
                 pipe = load_model(selected_model)
             
-            # Create progress bar
+            # Create progress bar and time display
             progress_bar = st.progress(0)
             progress_text = st.empty()
+            time_text = st.empty()
+            
+            # Track start time
+            start_time = time.time()
             
             # Create a callback to update progress
             def progress_callback(step, timestep, latents):
+                current_time = time.time()
+                elapsed_time = current_time - start_time
+                
+                # Calculate progress
                 progress = min(int((step + 1) / num_inference_steps * 100), 100)
-                progress_bar.progress(progress)
-                progress_text.markdown(f'<span style="color: #FFD700">Generating image... {progress}%</span>', unsafe_allow_html=True)
+                
+                # Calculate estimated time remaining
+                if step > 0:
+                    time_per_step = elapsed_time / step
+                    remaining_steps = num_inference_steps - step
+                    estimated_time_remaining = time_per_step * remaining_steps
+                    estimated_end_time = datetime.now() + timedelta(seconds=estimated_time_remaining)
+                    
+                    # Update progress and time displays
+                    progress_bar.progress(progress)
+                    progress_text.markdown(
+                        f'<span style="color: #FFD700">Generating image... {progress}%</span>', 
+                        unsafe_allow_html=True
+                    )
+                    time_text.markdown(
+                        f'<span style="color: #FFD700">Estimated completion: {estimated_end_time.strftime("%H:%M:%S")}</span>', 
+                        unsafe_allow_html=True
+                    )
             
             # Set deterministic seed
             generator = torch.Generator(device="cpu").manual_seed(seed)
@@ -176,6 +201,7 @@ with col2:
             loading_container.empty()
             progress_bar.empty()
             progress_text.empty()
+            time_text.empty()
             
             # Display image
             image_placeholder.image(image, caption=f"Generated Image using {selected_model} style", use_container_width=True)
@@ -195,6 +221,7 @@ with col2:
             loading_container.empty()
             progress_bar.empty()
             progress_text.empty()
+            time_text.empty()
             st.error(f"Error generating image: {str(e)}")
     elif generate_button:
         st.warning("⚠️ Please enter a prompt first.") 
