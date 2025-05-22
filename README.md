@@ -1,9 +1,71 @@
 # Text to Image Generator
 
 <div align="center">
-  <img src="static/images/thumbnail.png" alt="Text to Image Generator Demo" width="600"/>
+  <img src="thumbnail.png" alt="Text to Image Generator Demo" width="600"/>
   <br>
   <em>AI-powered image generation with Stable Diffusion</em>
+</div>
+
+## Available Styles
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="static/images/hidream_style.png" alt="HiDream Style" width="200"/>
+        <br>
+        <b>HiDream</b>
+        <br>
+        <em>3D Floating Head Style</em>
+      </td>
+      <td align="center">
+        <img src="static/images/disney_style.png" alt="Disney Style" width="200"/>
+        <br>
+        <b>Disney</b>
+        <br>
+        <em>Disney Animation Style</em>
+      </td>
+      <td align="center">
+        <img src="static/images/flux_style.png" alt="Flux Style" width="200"/>
+        <br>
+        <b>Flux</b>
+        <br>
+        <em>Vector Journey Style</em>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="static/images/text_to_image_style.png" alt="Text to Image Style" width="200"/>
+        <br>
+        <b>Text to Image</b>
+        <br>
+        <em>Realistic Style</em>
+      </td>
+      <td align="center">
+        <img src="static/images/clay_animation_style.png" alt="Clay Animation Style" width="200"/>
+        <br>
+        <b>Clay Animation</b>
+        <br>
+        <em>Clay Art Style</em>
+      </td>
+      <td align="center">
+        <img src="static/images/storyboard_style.png" alt="Storyboard Style" width="200"/>
+        <br>
+        <b>Storyboard Sketch</b>
+        <br>
+        <em>Sketch Style</em>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" colspan="3">
+        <img src="static/images/graphic_novel_style.png" alt="Graphic Novel Style" width="200"/>
+        <br>
+        <b>Graphic Novel</b>
+        <br>
+        <em>Comic Book Style</em>
+      </td>
+    </tr>
+  </table>
 </div>
 
 This application uses the FLUX-dev-lora-Vector-Journey model to generate images from text prompts. It features a modern, responsive UI built with Streamlit and uses Stable Diffusion for image generation.
