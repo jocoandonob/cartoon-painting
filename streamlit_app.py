@@ -40,6 +40,14 @@ MODEL_CONFIGS = {
         "use_safetensors": True,
         "is_sdxl": False,
         "pipeline": "flux"
+    },
+    "TextToImage": {
+        "base_model": "stabilityai/stable-diffusion-xl-base-1.0",
+        "lora_path": "ZB-Tech/Text-to-Image",
+        "default_prompt": "Draw a picture of two female boxers fighting each other.",
+        "use_safetensors": True,
+        "is_sdxl": True,
+        "pipeline": "sdxl"
     }
 }
 
