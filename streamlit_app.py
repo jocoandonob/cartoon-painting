@@ -1,7 +1,6 @@
 import streamlit as st
 import torch
-from diffusers import StableDiffusionPipeline
-from safetensors.torch import load_file
+from diffusers import StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler
 from PIL import Image
 import io
 import base64
@@ -32,30 +31,37 @@ def load_template(template_name):
 load_css()
 
 # Title and description
-st.title("🎨 Joco Image Generator")
+st.title("🎨 Disney Style Image Generator")
 st.markdown(load_template("cards").split("<!-- Description Card -->")[1], unsafe_allow_html=True)
 
 # Initialize the model
 @st.cache_resource
 def load_model():
-    model_path = "models/joco.safetensors"
-    pipe = StableDiffusionPipeline.from_pretrained(
-        "runwayml/stable-diffusion-v1-5",
-        torch_dtype=torch.float32,
-        safety_checker=None
-    )
-    
-    # Load LoRA weights
-    state_dict = load_file(model_path)
-    pipe.unet.load_state_dict(state_dict, strict=False)
-    
-    # Move to GPU if available
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    pipe = pipe.to(device)
-    return pipe
+    try:
+        # Load SDXL base model
+        pipe = StableDiffusionXLPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-xl-base-1.0",
+            torch_dtype=torch.float32,
+            use_safetensors=True
+        ).to("cpu")
+        
+        # Optional: Set the same scheduler Hugging Face might use
+        pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+        
+        # Load LoRA weights
+        pipe.load_lora_weights("goofyai/disney_style_xl", weight_name="disney_style_xl.safetensors")
+        
+        # Move to GPU if available, otherwise keep on CPU
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        pipe = pipe.to(device)
+        
+        return pipe
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        st.stop()
 
 # Load the model
-with st.spinner(""):
+with st.spinner("Loading model..."):
     try:
         pipe = load_model()
         st.success("✨ Model loaded successfully!")
@@ -74,14 +80,25 @@ with col1:
     prompt = st.text_area(
         "Enter your prompt:",
         height=80,
-        placeholder="Describe the image you want to generate... (e.g., 'A beautiful sunset over mountains, digital art style')"
+        placeholder="Describe the image you want to generate... (e.g., 'a cute disney-style princess, full body, highly detailed')"
+    )
+    
+    # Negative prompt
+    negative_prompt = st.text_area(
+        "Negative prompt (what to avoid):",
+        height=68,
+        placeholder="blurry, low quality, distorted",
+        value="blurry, low quality, distorted, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, normal quality, jpeg artifacts, signature, watermark, username"
     )
     
     # Parameters section
     st.markdown(load_template("cards").split("<!-- Parameters Card -->")[1].split("<!-- Output Card -->")[0], unsafe_allow_html=True)
     
-    num_inference_steps = st.slider("Number of inference steps", 20, 100, 50)
+    num_inference_steps = st.slider("Number of inference steps", 20, 50, 30)
     guidance_scale = st.slider("Guidance scale", 1.0, 20.0, 7.5)
+    
+    # Seed control
+    seed = st.number_input("Seed (for reproducibility)", value=123, step=1)
     
     # Generate button
     generate_button = st.button("🎨 Generate Image", type="primary")
@@ -109,11 +126,16 @@ with col2:
                 progress_bar.progress(progress)
                 progress_text.markdown(f'<span style="color: #FFD700">Generating image... {progress}%</span>', unsafe_allow_html=True)
             
+            # Set deterministic seed
+            generator = torch.Generator(device="cpu").manual_seed(seed)
+            
             # Generate image with progress callback
             image = pipe(
-                prompt,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
                 num_inference_steps=num_inference_steps,
                 guidance_scale=guidance_scale,
+                generator=generator,
                 callback=progress_callback,
                 callback_steps=1
             ).images[0]
@@ -132,7 +154,7 @@ with col2:
             st.download_button(
                 label="⬇️ Download Image",
                 data=buf.getvalue(),
-                file_name="generated_image.png",
+                file_name="disney_style_output.png",
                 mime="image/png"
             )
             
