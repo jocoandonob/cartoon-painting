@@ -1,6 +1,7 @@
 import streamlit as st
 import torch
-from diffusers import StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler, DiffusionPipeline
+from diffusers import StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler, DiffusionPipeline, StableDiffusionPipeline
+from transformers import CLIPTextModel, CLIPTokenizer
 from PIL import Image
 import io
 import base64
@@ -9,6 +10,10 @@ import os
 import json
 from datetime import datetime, timedelta
 from huggingface_hub import login
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Model configurations
 MODEL_CONFIGS = {
@@ -17,21 +22,24 @@ MODEL_CONFIGS = {
         "lora_path": "models/Floating_Head_HiDream_v1_3000.safetensors",
         "default_prompt": "h3adfl0at 3D floating head of a an old latino man wearing a LA Dodgers baseball cap hat and thick rimmed brown sunglasses with light tinted lenses, he has a thick mustache and looks brooding",
         "use_safetensors": True,
-        "is_sdxl": False
+        "is_sdxl": False,
+        "pipeline": "stable-diffusion"
     },
     "Disney": {
         "base_model": "stabilityai/stable-diffusion-xl-base-1.0",
         "lora_path": "models/disney_style_xl.safetensors",
         "default_prompt": "disney style, animal focus, animal, cat",
         "use_safetensors": True,
-        "is_sdxl": True
+        "is_sdxl": True,
+        "pipeline": "sdxl"
     },
     "Flux": {
         "base_model": "black-forest-labs/FLUX.1-dev",
         "lora_path": "models/joco.safetensors",
         "default_prompt": "A cartoon style couple takes a selfie in front of an Egyptian pyramid, which is composed of a man and a woman, both wearing sunglasses. Men wear blue shirts, jeans, and white shoes, while women wear yellow hats, blue jackets, white tops, orange dresses, and pink sneakers. Sand and a group of tourists in the distance. Integrating reality and cartoon elements.",
         "use_safetensors": True,
-        "is_sdxl": False
+        "is_sdxl": False,
+        "pipeline": "flux"
     }
 }
 
@@ -77,20 +85,45 @@ def load_model(model_name):
         # Login to Hugging Face
         login(token=hf_token)
         
-        # Load base model
-        if config["is_sdxl"]:
+        # Load base model based on pipeline type
+        if config["pipeline"] == "sdxl":
             pipe = StableDiffusionXLPipeline.from_pretrained(
                 config["base_model"],
                 torch_dtype=torch.float32,
                 use_safetensors=config["use_safetensors"],
-                token=hf_token
+                token=hf_token,
+                add_prefix_space=False
             )
-        else:
+        elif config["pipeline"] == "flux":
+            # Load Flux model using DiffusionPipeline
             pipe = DiffusionPipeline.from_pretrained(
                 config["base_model"],
                 torch_dtype=torch.float32,
                 use_safetensors=config["use_safetensors"],
                 token=hf_token
+            )
+        else:  # stable-diffusion
+            # Load individual components
+            tokenizer = CLIPTokenizer.from_pretrained(
+                config["base_model"],
+                subfolder="tokenizer",
+                token=hf_token
+            )
+            text_encoder = CLIPTextModel.from_pretrained(
+                config["base_model"],
+                subfolder="text_encoder",
+                token=hf_token
+            )
+            
+            # Load the pipeline with all components
+            pipe = StableDiffusionPipeline.from_pretrained(
+                config["base_model"],
+                torch_dtype=torch.float32,
+                use_safetensors=config["use_safetensors"],
+                token=hf_token,
+                add_prefix_space=False,
+                tokenizer=tokenizer,
+                text_encoder=text_encoder
             )
         
         # Set scheduler
