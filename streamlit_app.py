@@ -43,8 +43,32 @@ MODEL_CONFIGS = {
     },
     "TextToImage": {
         "base_model": "stabilityai/stable-diffusion-xl-base-1.0",
-        "lora_path": "ZB-Tech/Text-to-Image",
+        "lora_path": "models/pytorch_lora_weights.safetensors",
         "default_prompt": "Draw a picture of two female boxers fighting each other.",
+        "use_safetensors": True,
+        "is_sdxl": True,
+        "pipeline": "sdxl"
+    },
+    "ClayAnimation": {
+        "base_model": "runwayml/stable-diffusion-v1-5",
+        "lora_path": "models/ClayAnimationRedmond15-ClayAnimation-Clay.safetensors",
+        "default_prompt": "A cute blonde girl, ,Clay Animation, Clay,",
+        "use_safetensors": True,
+        "is_sdxl": False,
+        "pipeline": "stable-diffusion"
+    },
+    "StoryboardSketch": {
+        "base_model": "stabilityai/stable-diffusion-xl-base-1.0",
+        "lora_path": "models/Storyboard_sketch.safetensors",
+        "default_prompt": "storyboard sketch of a zombie basketball player dunking with both hands, action shot, motion blur, hero",
+        "use_safetensors": True,
+        "is_sdxl": True,
+        "pipeline": "sdxl"
+    },
+    "GraphicNovel": {
+        "base_model": "stabilityai/stable-diffusion-xl-base-1.0",
+        "lora_path": "models/Graphic_Novel_Illustration-000007.safetensors",
+        "default_prompt": "breathtaking highly detailed graphic novel illustration of morgan freeman riding a harley davidson motorcycle, dark and gritty",
         "use_safetensors": True,
         "is_sdxl": True,
         "pipeline": "sdxl"
