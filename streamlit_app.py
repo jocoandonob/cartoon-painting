@@ -8,10 +8,11 @@ import time
 import os
 import json
 from datetime import datetime, timedelta
+from huggingface_hub import login
 
 # Model configurations
 MODEL_CONFIGS = {
-    "Canopus": {
+    "HiDream": {
         "base_model": "HiDream-ai/HiDream-I1-Full",
         "lora_path": "models/Floating_Head_HiDream_v1_3000.safetensors",
         "default_prompt": "h3adfl0at 3D floating head of a an old latino man wearing a LA Dodgers baseball cap hat and thick rimmed brown sunglasses with light tinted lenses, he has a thick mustache and looks brooding",
@@ -67,18 +68,29 @@ def load_model(model_name):
     try:
         config = MODEL_CONFIGS[model_name]
         
+        # Check if HF token is set
+        hf_token = os.getenv("HUGGINGFACE_TOKEN")
+        if not hf_token:
+            st.error("Hugging Face token not found. Please set the HUGGINGFACE_TOKEN environment variable.")
+            st.stop()
+        
+        # Login to Hugging Face
+        login(token=hf_token)
+        
         # Load base model
         if config["is_sdxl"]:
             pipe = StableDiffusionXLPipeline.from_pretrained(
                 config["base_model"],
                 torch_dtype=torch.float32,
-                use_safetensors=config["use_safetensors"]
+                use_safetensors=config["use_safetensors"],
+                token=hf_token
             )
         else:
             pipe = DiffusionPipeline.from_pretrained(
                 config["base_model"],
                 torch_dtype=torch.float32,
-                use_safetensors=config["use_safetensors"]
+                use_safetensors=config["use_safetensors"],
+                token=hf_token
             )
         
         # Set scheduler
