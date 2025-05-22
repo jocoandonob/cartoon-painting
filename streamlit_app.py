@@ -1,11 +1,37 @@
 import streamlit as st
 import torch
-from diffusers import StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler
+from diffusers import StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler, DiffusionPipeline
 from PIL import Image
 import io
 import base64
 import time
 import os
+import json
+
+# Model configurations
+MODEL_CONFIGS = {
+    "Canopus": {
+        "base_model": "black-forest-labs/FLUX.1-dev",
+        "lora_path": "models/Canopus-Pixar-3D-FluxDev-LoRA.safetensors",
+        "default_prompt": "3d image, cute girl, in the style of Pixar --ar 1:2 --stylize 750, style of Pixarstyle of Pixar 4K : cinematic --ar 68:128 --stylize 750 --v 5.2",
+        "use_safetensors": True,
+        "is_sdxl": False
+    },
+    "Disney": {
+        "base_model": "stabilityai/stable-diffusion-xl-base-1.0",
+        "lora_path": "models/disney_style_xl.safetensors",
+        "default_prompt": "disney style, animal focus, animal, cat",
+        "use_safetensors": True,
+        "is_sdxl": True
+    },
+    "Flux": {
+        "base_model": "black-forest-labs/FLUX.1-dev",
+        "lora_path": "models/joco.safetensors",
+        "default_prompt": "A cartoon style couple takes a selfie in front of an Egyptian pyramid, which is composed of a man and a woman, both wearing sunglasses. Men wear blue shirts, jeans, and white shoes, while women wear yellow hats, blue jackets, white tops, orange dresses, and pink sneakers. Sand and a group of tourists in the distance. Integrating reality and cartoon elements.",
+        "use_safetensors": True,
+        "is_sdxl": False
+    }
+}
 
 # Set page config
 st.set_page_config(
@@ -31,40 +57,40 @@ def load_template(template_name):
 load_css()
 
 # Title and description
-st.title("🎨 Disney Style Image Generator")
+st.title("🎨 Style Image Generator")
 st.markdown(load_template("cards").split("<!-- Description Card -->")[1], unsafe_allow_html=True)
 
 # Initialize the model
 @st.cache_resource
-def load_model():
+def load_model(model_name):
     try:
-        # Load SDXL base model
-        pipe = StableDiffusionXLPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0",
-            torch_dtype=torch.float32,
-            use_safetensors=True
-        ).to("cpu")
+        config = MODEL_CONFIGS[model_name]
         
-        # Optional: Set the same scheduler Hugging Face might use
+        # Load base model
+        if config["is_sdxl"]:
+            pipe = StableDiffusionXLPipeline.from_pretrained(
+                config["base_model"],
+                torch_dtype=torch.float32,
+                use_safetensors=config["use_safetensors"]
+            )
+        else:
+            pipe = DiffusionPipeline.from_pretrained(
+                config["base_model"],
+                torch_dtype=torch.float32,
+                use_safetensors=config["use_safetensors"]
+            )
+        
+        # Set scheduler
         pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
         
         # Load LoRA weights
-        pipe.load_lora_weights("goofyai/disney_style_xl", weight_name="disney_style_xl.safetensors")
+        pipe.load_lora_weights(config["lora_path"])
         
         # Move to GPU if available, otherwise keep on CPU
         device = "cuda" if torch.cuda.is_available() else "cpu"
         pipe = pipe.to(device)
         
         return pipe
-    except Exception as e:
-        st.error(f"Error loading model: {str(e)}")
-        st.stop()
-
-# Load the model
-with st.spinner("Loading model..."):
-    try:
-        pipe = load_model()
-        st.success("✨ Model loaded successfully!")
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
         st.stop()
@@ -76,19 +102,22 @@ with col1:
     # Input section
     st.markdown(load_template("cards").split("<!-- Input Card -->")[1].split("<!-- Parameters Card -->")[0], unsafe_allow_html=True)
     
+    # Model selection
+    selected_model = st.selectbox(
+        "Select Style:",
+        options=list(MODEL_CONFIGS.keys()),
+        format_func=lambda x: x
+    )
+    
+    # Load model configuration
+    model_config = MODEL_CONFIGS[selected_model]
+    
     # Text input with a larger text area
     prompt = st.text_area(
         "Enter your prompt:",
         height=80,
-        placeholder="Describe the image you want to generate... (e.g., 'a cute disney-style princess, full body, highly detailed')"
-    )
-    
-    # Negative prompt
-    negative_prompt = st.text_area(
-        "Negative prompt (what to avoid):",
-        height=68,
-        placeholder="blurry, low quality, distorted",
-        value="blurry, low quality, distorted, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, normal quality, jpeg artifacts, signature, watermark, username"
+        placeholder=f"Describe the image you want to generate... (e.g., '{model_config['default_prompt']}')",
+        value=model_config["default_prompt"]
     )
     
     # Parameters section
@@ -116,6 +145,10 @@ with col2:
         loading_container.markdown(load_template("loading"), unsafe_allow_html=True)
         
         try:
+            # Load the selected model
+            with st.spinner("Loading model..."):
+                pipe = load_model(selected_model)
+            
             # Create progress bar
             progress_bar = st.progress(0)
             progress_text = st.empty()
@@ -132,7 +165,6 @@ with col2:
             # Generate image with progress callback
             image = pipe(
                 prompt=prompt,
-                negative_prompt=negative_prompt,
                 num_inference_steps=num_inference_steps,
                 guidance_scale=guidance_scale,
                 generator=generator,
@@ -146,7 +178,7 @@ with col2:
             progress_text.empty()
             
             # Display image
-            image_placeholder.image(image, caption="Generated Image", use_container_width=True)
+            image_placeholder.image(image, caption=f"Generated Image using {selected_model} style", use_container_width=True)
             
             # Add download button
             buf = io.BytesIO()
@@ -154,12 +186,15 @@ with col2:
             st.download_button(
                 label="⬇️ Download Image",
                 data=buf.getvalue(),
-                file_name="disney_style_output.png",
+                file_name=f"{selected_model.lower()}_style_output.png",
                 mime="image/png"
             )
             
         except Exception as e:
+            # Clear all loading states
             loading_container.empty()
+            progress_bar.empty()
+            progress_text.empty()
             st.error(f"Error generating image: {str(e)}")
     elif generate_button:
         st.warning("⚠️ Please enter a prompt first.") 

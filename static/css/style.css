@@ -235,4 +235,128 @@ footer {
 
 .st-emotion-cache-zq5wmm {
     visibility: hidden !important;
+}
+
+/* Improve visibility of form labels in dark theme */
+.stSelectbox label,
+.stNumberInput label {
+    color: var(--text-color) !important;
+    font-weight: 500 !important;
+    opacity: 0.9 !important;
+}
+
+/* Style for select box and number input containers */
+.stSelectbox,
+.stNumberInput {
+    background-color: var(--input-bg) !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    margin-bottom: 16px !important;
+}
+
+/* Style for select box dropdown */
+.stSelectbox [data-baseweb="select"] {
+    background-color: var(--input-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Override Streamlit's default select box and number input styles */
+.stSelectbox [data-baseweb="select"] > div,
+.stNumberInput [data-baseweb="input"] > div {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Style for select box value container */
+.stSelectbox [data-baseweb="select"] div[role="combobox"] {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Override Streamlit's default select box styles */
+.stSelectbox [data-baseweb="select"] div[role="combobox"] div {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+}
+
+.stSelectbox [data-baseweb="select"] div[role="combobox"] div[aria-expanded="true"] {
+    background-color: var(--input-bg) !important;
+}
+
+/* Override Streamlit's default number input styles */
+.stNumberInput [data-baseweb="input"] input {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Override Streamlit's default select box dropdown */
+.stSelectbox [data-baseweb="select"] div[role="listbox"] {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Style for select box dropdown option hover */
+.stSelectbox [data-baseweb="select"] div[role="option"]:hover {
+    background-color: rgba(0, 255, 157, 0.1) !important;
+}
+
+/* Style for selected option */
+.stSelectbox [data-baseweb="select"] div[role="option"][aria-selected="true"] {
+    background-color: rgba(0, 255, 157, 0.2) !important;
+    color: var(--primary-color) !important;
+}
+
+/* Override Streamlit's default select box arrow */
+.stSelectbox [data-baseweb="select"] div[role="combobox"] div[aria-expanded="true"] svg {
+    color: var(--text-color) !important;
+}
+
+/* Override Streamlit's default select box placeholder */
+.stSelectbox [data-baseweb="select"] div[role="combobox"] div[aria-expanded="false"] {
+    color: var(--text-color) !important;
+}
+
+/* Override Streamlit's default select box buttons */
+.stSelectbox [data-baseweb="select"] button {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Override Streamlit's default select box dropdown options */
+.stSelectbox [data-baseweb="select"] div[role="option"] {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Override Streamlit's default select box dropdown container */
+.stSelectbox [data-baseweb="popover"] {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Override Streamlit's default select box dropdown list */
+.stSelectbox [data-baseweb="popover"] div[role="listbox"] {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Override Streamlit's default select box dropdown option */
+.stSelectbox [data-baseweb="popover"] div[role="option"] {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Override Streamlit's default select box dropdown option hover */
+.stSelectbox [data-baseweb="popover"] div[role="option"]:hover {
+    background-color: rgba(0, 255, 157, 0.1) !important;
+}
+
+/* Override Streamlit's default select box dropdown option selected */
+.stSelectbox [data-baseweb="popover"] div[role="option"][aria-selected="true"] {
+    background-color: rgba(0, 255, 157, 0.2) !important;
+    color: var(--primary-color) !important;
 } 
