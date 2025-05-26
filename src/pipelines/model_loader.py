@@ -45,20 +45,22 @@ def load_model(model_name, img2img=False, inpainting=False):
                 pipe = AutoPipelineForInpainting.from_pipe(base_pipe)
             elif img2img:
                 # Load base model
-                base_pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
-                    config["base_model"],
-                    torch_dtype=torch.float32,
+                base_pipe = DiffusionPipeline.from_pretrained(
+                    "stabilityai/stable-diffusion-xl-base-1.0",
+                    torch_dtype=torch.float16,
                     variant="fp16",
-                    use_safetensors=config["use_safetensors"],
+                    use_safetensors=True,
                     token=hf_token
                 )
                 
-                # Load refiner model
-                refiner_pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+                # Load refiner model with shared components
+                refiner_pipe = DiffusionPipeline.from_pretrained(
                     "stabilityai/stable-diffusion-xl-refiner-1.0",
+                    text_encoder_2=base_pipe.text_encoder_2,
+                    vae=base_pipe.vae,
                     torch_dtype=torch.float32,
-                    variant="fp16",
                     use_safetensors=True,
+                    variant="fp16",
                     token=hf_token
                 )
                 
