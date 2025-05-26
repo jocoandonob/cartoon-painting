@@ -17,14 +17,14 @@ load_dotenv()
 
 # Model configurations
 MODEL_CONFIGS = {
-    "HiDream": {
-        "base_model": "HiDream-ai/HiDream-I1-Full",
-        "lora_path": "models/Floating_Head_HiDream_v1_3000.safetensors",
-        "default_prompt": "h3adfl0at 3D floating head of a an old latino man wearing a LA Dodgers baseball cap hat and thick rimmed brown sunglasses with light tinted lenses, he has a thick mustache and looks brooding",
-        "use_safetensors": True,
-        "is_sdxl": False,
-        "pipeline": "stable-diffusion"
-    },
+    # "HiDream": {
+    #     "base_model": "HiDream-ai/HiDream-I1-Full",
+    #     "lora_path": "models/Floating_Head_HiDream_v1_3000.safetensors",
+    #     "default_prompt": "h3adfl0at 3D floating head of a an old latino man wearing a LA Dodgers baseball cap hat and thick rimmed brown sunglasses with light tinted lenses, he has a thick mustache and looks brooding",
+    #     "use_safetensors": True,
+    #     "is_sdxl": False,
+    #     "pipeline": "stable-diffusion"
+    # },
     "Disney": {
         "base_model": "stabilityai/stable-diffusion-xl-base-1.0",
         "lora_path": "models/disney_style_xl.safetensors",
@@ -123,8 +123,7 @@ def load_model(model_name):
                 config["base_model"],
                 torch_dtype=torch.float32,
                 use_safetensors=config["use_safetensors"],
-                token=hf_token,
-                add_prefix_space=False
+                token=hf_token
             )
         elif config["pipeline"] == "flux":
             # Load Flux model using DiffusionPipeline
