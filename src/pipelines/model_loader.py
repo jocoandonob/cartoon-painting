@@ -2,11 +2,13 @@ import torch
 from diffusers import (
     StableDiffusionXLPipeline,
     StableDiffusionXLImg2ImgPipeline,
+    StableDiffusionXLInpaintPipeline,
     EulerAncestralDiscreteScheduler,
     DiffusionPipeline,
     StableDiffusionPipeline,
     AutoPipelineForImage2Image,
-    AutoPipelineForText2Image
+    AutoPipelineForText2Image,
+    AutoPipelineForInpainting
 )
 from transformers import CLIPTextModel, CLIPTokenizer
 from huggingface_hub import login
@@ -15,7 +17,7 @@ import streamlit as st
 from src.config.constants import MODEL_CONFIGS
 
 @st.cache_resource
-def load_model(model_name, img2img=False):
+def load_model(model_name, img2img=False, inpainting=False):
     try:
         config = MODEL_CONFIGS[model_name]
         
@@ -30,7 +32,18 @@ def load_model(model_name, img2img=False):
         
         # Load base model based on pipeline type
         if config["pipeline"] == "sdxl":
-            if img2img:
+            if inpainting:
+                # First load text2image pipeline
+                base_pipe = StableDiffusionXLPipeline.from_pretrained(
+                    config["base_model"],
+                    torch_dtype=torch.float32,
+                    variant="fp16",
+                    use_safetensors=config["use_safetensors"],
+                    token=hf_token
+                )
+                # Convert to inpainting pipeline
+                pipe = AutoPipelineForInpainting.from_pipe(base_pipe)
+            elif img2img:
                 # Load base model
                 base_pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
                     config["base_model"],
