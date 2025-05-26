@@ -39,7 +39,7 @@ def render_image_to_image_tab():
         if uploaded_file is not None:
             # Display the uploaded image
             init_image = Image.open(uploaded_file)
-            st.image(init_image, caption="Uploaded Image", use_container_width=True)
+            st.image(init_image, caption="Original Image", use_container_width=True)
         
         # Text input with a larger text area
         prompt = st.text_area(
@@ -77,8 +77,10 @@ def render_image_to_image_tab():
             
             try:
                 # Load the selected model
-                with st.spinner("Loading model..."):
-                    pipe = load_model(selected_model, img2img=True)
+                with st.spinner("Loading models..."):
+                    pipes = load_model(selected_model, img2img=True)
+                    base_pipe = pipes["base"]
+                    refiner_pipe = pipes["refiner"]
                 
                 # Create progress bar and time display
                 progress_bar = st.progress(0)
@@ -121,11 +123,32 @@ def render_image_to_image_tab():
                 # Set deterministic seed
                 generator = torch.Generator(device="cpu").manual_seed(seed)
                 
-                # Generate image with progress callback
+                # Generate image with base model
                 with torch.no_grad():
-                    image = pipe(
+                    # First stage: Generate with base model
+                    progress_text.markdown(
+                        '<span style="color: #FFD700">Stage 1: Generating with base model...</span>', 
+                        unsafe_allow_html=True
+                    )
+                    base_image = base_pipe(
                         prompt=prompt,
                         image=init_image,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                        strength=strength,
+                        generator=generator,
+                        callback=progress_callback,
+                        callback_steps=1
+                    ).images[0]
+                    
+                    # Second stage: Refine with refiner model
+                    progress_text.markdown(
+                        '<span style="color: #FFD700">Stage 2: Refining with refiner model...</span>', 
+                        unsafe_allow_html=True
+                    )
+                    refined_image = refiner_pipe(
+                        prompt=prompt,
+                        image=base_image,
                         num_inference_steps=num_inference_steps,
                         guidance_scale=guidance_scale,
                         strength=strength,
@@ -140,16 +163,16 @@ def render_image_to_image_tab():
                 progress_text.empty()
                 time_text.empty()
                 
-                # Display image
-                image_placeholder.image(image, caption=f"Transformed Image using {selected_model} style", use_container_width=True)
+                # Display refined image
+                image_placeholder.image(refined_image, caption="Refined Image", use_container_width=True)
                 
                 # Add download button
                 buf = io.BytesIO()
-                image.save(buf, format="PNG")
+                refined_image.save(buf, format="PNG")
                 st.download_button(
-                    label="⬇️ Download Image",
+                    label="⬇️ Download Refined Image",
                     data=buf.getvalue(),
-                    file_name=f"{selected_model.lower()}_style_transformed.png",
+                    file_name=f"{selected_model.lower()}_style_refined.png",
                     mime="image/png"
                 )
                 

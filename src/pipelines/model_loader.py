@@ -1,6 +1,7 @@
 import torch
 from diffusers import (
     StableDiffusionXLPipeline,
+    StableDiffusionXLImg2ImgPipeline,
     EulerAncestralDiscreteScheduler,
     DiffusionPipeline,
     StableDiffusionPipeline,
@@ -30,22 +31,38 @@ def load_model(model_name, img2img=False):
         # Load base model based on pipeline type
         if config["pipeline"] == "sdxl":
             if img2img:
-                # For image-to-image, first load text2image pipeline
-                pipe = AutoPipelineForText2Image.from_pretrained(
+                # Load base model
+                base_pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
                     config["base_model"],
                     torch_dtype=torch.float32,
                     variant="fp16",
                     use_safetensors=config["use_safetensors"],
                     token=hf_token
                 )
-                # Then convert to image2image pipeline
-                pipe = AutoPipelineForImage2Image.from_pipe(pipe)
-                # Enable attention slicing for better memory efficiency
-                pipe.enable_attention_slicing()
+                
+                # Load refiner model
+                refiner_pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+                    "stabilityai/stable-diffusion-xl-refiner-1.0",
+                    torch_dtype=torch.float32,
+                    variant="fp16",
+                    use_safetensors=True,
+                    token=hf_token
+                )
+                
+                # Move models to GPU if available
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                base_pipe = base_pipe.to(device)
+                refiner_pipe = refiner_pipe.to(device)
+                
+                # Load LoRA weights for base model
+                base_pipe.load_lora_weights(config["lora_path"])
+                
+                return {"base": base_pipe, "refiner": refiner_pipe}
             else:
                 pipe = StableDiffusionXLPipeline.from_pretrained(
                     config["base_model"],
                     torch_dtype=torch.float32,
+                    variant="fp16",
                     use_safetensors=config["use_safetensors"],
                     token=hf_token
                 )
