@@ -1,6 +1,6 @@
 import streamlit as st
 import torch
-from diffusers import StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler, DiffusionPipeline, StableDiffusionPipeline, StableDiffusionImg2ImgPipeline
+from diffusers import StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler, DiffusionPipeline, StableDiffusionPipeline, AutoPipelineForImage2Image
 from transformers import CLIPTextModel, CLIPTokenizer
 from PIL import Image
 import io
@@ -121,57 +121,41 @@ def load_model(model_name, img2img=False):
         login(token=hf_token)
         
         # Load base model based on pipeline type
-        if img2img:
-            if config["pipeline"] == "sdxl":
-                pipe = StableDiffusionXLPipeline.from_pretrained(
-                    config["base_model"],
-                    torch_dtype=torch.float32,
-                    use_safetensors=config["use_safetensors"],
-                    token=hf_token
-                )
-            else:  # stable-diffusion
-                pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-                    config["base_model"],
-                    torch_dtype=torch.float32,
-                    use_safetensors=config["use_safetensors"],
-                    token=hf_token
-                )
-        else:
-            if config["pipeline"] == "sdxl":
-                pipe = StableDiffusionXLPipeline.from_pretrained(
-                    config["base_model"],
-                    torch_dtype=torch.float32,
-                    use_safetensors=config["use_safetensors"],
-                    token=hf_token
-                )
-            elif config["pipeline"] == "flux":
-                pipe = DiffusionPipeline.from_pretrained(
-                    config["base_model"],
-                    torch_dtype=torch.float32,
-                    use_safetensors=config["use_safetensors"],
-                    token=hf_token
-                )
-            else:  # stable-diffusion
-                tokenizer = CLIPTokenizer.from_pretrained(
-                    config["base_model"],
-                    subfolder="tokenizer",
-                    token=hf_token
-                )
-                text_encoder = CLIPTextModel.from_pretrained(
-                    config["base_model"],
-                    subfolder="text_encoder",
-                    token=hf_token
-                )
-                
-                pipe = StableDiffusionPipeline.from_pretrained(
-                    config["base_model"],
-                    torch_dtype=torch.float32,
-                    use_safetensors=config["use_safetensors"],
-                    token=hf_token,
-                    add_prefix_space=False,
-                    tokenizer=tokenizer,
-                    text_encoder=text_encoder
-                )
+        if config["pipeline"] == "sdxl":
+            pipe = StableDiffusionXLPipeline.from_pretrained(
+                config["base_model"],
+                torch_dtype=torch.float32,
+                use_safetensors=config["use_safetensors"],
+                token=hf_token
+            )
+        elif config["pipeline"] == "flux":
+            pipe = DiffusionPipeline.from_pretrained(
+                config["base_model"],
+                torch_dtype=torch.float32,
+                use_safetensors=config["use_safetensors"],
+                token=hf_token
+            )
+        else:  # stable-diffusion
+            tokenizer = CLIPTokenizer.from_pretrained(
+                config["base_model"],
+                subfolder="tokenizer",
+                token=hf_token
+            )
+            text_encoder = CLIPTextModel.from_pretrained(
+                config["base_model"],
+                subfolder="text_encoder",
+                token=hf_token
+            )
+            
+            pipe = StableDiffusionPipeline.from_pretrained(
+                config["base_model"],
+                torch_dtype=torch.float32,
+                use_safetensors=config["use_safetensors"],
+                token=hf_token,
+                add_prefix_space=False,
+                tokenizer=tokenizer,
+                text_encoder=text_encoder
+            )
         
         # Set scheduler
         pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
@@ -182,6 +166,10 @@ def load_model(model_name, img2img=False):
         # Move to GPU if available, otherwise keep on CPU
         device = "cuda" if torch.cuda.is_available() else "cpu"
         pipe = pipe.to(device)
+        
+        # If img2img is requested, create the image-to-image pipeline from the text-to-image pipeline
+        if img2img:
+            pipe = AutoPipelineForImage2Image.from_pipe(pipe).to(device)
         
         return pipe
     except Exception as e:
@@ -265,7 +253,11 @@ with tab1:
                         time_per_step = elapsed_time / step
                         remaining_steps = num_inference_steps - step
                         estimated_time_remaining = time_per_step * remaining_steps
-                        estimated_end_time = datetime.now() + timedelta(seconds=estimated_time_remaining)
+                        
+                        # Format time remaining in minutes and seconds
+                        minutes = int(estimated_time_remaining // 60)
+                        seconds = int(estimated_time_remaining % 60)
+                        time_str = f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
                         
                         # Update progress and time displays
                         progress_bar.progress(progress)
@@ -274,7 +266,7 @@ with tab1:
                             unsafe_allow_html=True
                         )
                         time_text.markdown(
-                            f'<span style="color: #FFD700">Estimated completion: {estimated_end_time.strftime("%H:%M:%S")}</span>', 
+                            f'<span style="color: #FFD700">Time remaining: {time_str}</span>', 
                             unsafe_allow_html=True
                         )
                 
@@ -408,7 +400,11 @@ with tab2:
                         time_per_step = elapsed_time / step
                         remaining_steps = num_inference_steps - step
                         estimated_time_remaining = time_per_step * remaining_steps
-                        estimated_end_time = datetime.now() + timedelta(seconds=estimated_time_remaining)
+                        
+                        # Format time remaining in minutes and seconds
+                        minutes = int(estimated_time_remaining // 60)
+                        seconds = int(estimated_time_remaining % 60)
+                        time_str = f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
                         
                         # Update progress and time displays
                         progress_bar.progress(progress)
@@ -417,7 +413,7 @@ with tab2:
                             unsafe_allow_html=True
                         )
                         time_text.markdown(
-                            f'<span style="color: #FFD700">Estimated completion: {estimated_end_time.strftime("%H:%M:%S")}</span>', 
+                            f'<span style="color: #FFD700">Time remaining: {time_str}</span>', 
                             unsafe_allow_html=True
                         )
                 
