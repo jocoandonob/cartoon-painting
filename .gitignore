@@ -28,6 +28,7 @@ ENV/
 .venv
 env.bak/
 venv.bak/
+v1/
 
 # IDE
 .idea/

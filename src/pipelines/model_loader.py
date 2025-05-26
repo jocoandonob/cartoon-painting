@@ -1,5 +1,12 @@
 import torch
-from diffusers import StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler, DiffusionPipeline, StableDiffusionPipeline, AutoPipelineForImage2Image
+from diffusers import (
+    StableDiffusionXLPipeline,
+    EulerAncestralDiscreteScheduler,
+    DiffusionPipeline,
+    StableDiffusionPipeline,
+    AutoPipelineForImage2Image,
+    AutoPipelineForText2Image
+)
 from transformers import CLIPTextModel, CLIPTokenizer
 from huggingface_hub import login
 import os
@@ -22,12 +29,26 @@ def load_model(model_name, img2img=False):
         
         # Load base model based on pipeline type
         if config["pipeline"] == "sdxl":
-            pipe = StableDiffusionXLPipeline.from_pretrained(
-                config["base_model"],
-                torch_dtype=torch.float32,
-                use_safetensors=config["use_safetensors"],
-                token=hf_token
-            )
+            if img2img:
+                # For image-to-image, first load text2image pipeline
+                pipe = AutoPipelineForText2Image.from_pretrained(
+                    config["base_model"],
+                    torch_dtype=torch.float32,
+                    variant="fp16",
+                    use_safetensors=config["use_safetensors"],
+                    token=hf_token
+                )
+                # Then convert to image2image pipeline
+                pipe = AutoPipelineForImage2Image.from_pipe(pipe)
+                # Enable attention slicing for better memory efficiency
+                pipe.enable_attention_slicing()
+            else:
+                pipe = StableDiffusionXLPipeline.from_pretrained(
+                    config["base_model"],
+                    torch_dtype=torch.float32,
+                    use_safetensors=config["use_safetensors"],
+                    token=hf_token
+                )
         elif config["pipeline"] == "flux":
             pipe = DiffusionPipeline.from_pretrained(
                 config["base_model"],
@@ -65,10 +86,6 @@ def load_model(model_name, img2img=False):
         # Move to GPU if available, otherwise keep on CPU
         device = "cuda" if torch.cuda.is_available() else "cpu"
         pipe = pipe.to(device)
-        
-        # If img2img is requested, create the image-to-image pipeline from the text-to-image pipeline
-        if img2img:
-            pipe = AutoPipelineForImage2Image.from_pipe(pipe).to(device)
         
         return pipe
     except Exception as e:

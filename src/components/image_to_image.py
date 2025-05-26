@@ -122,16 +122,17 @@ def render_image_to_image_tab():
                 generator = torch.Generator(device="cpu").manual_seed(seed)
                 
                 # Generate image with progress callback
-                image = pipe(
-                    prompt=prompt,
-                    image=init_image,
-                    num_inference_steps=num_inference_steps,
-                    guidance_scale=guidance_scale,
-                    strength=strength,
-                    generator=generator,
-                    callback=progress_callback,
-                    callback_steps=1
-                ).images[0]
+                with torch.no_grad():
+                    image = pipe(
+                        prompt=prompt,
+                        image=init_image,
+                        num_inference_steps=num_inference_steps,
+                        guidance_scale=guidance_scale,
+                        strength=strength,
+                        generator=generator,
+                        callback=progress_callback,
+                        callback_steps=1
+                    ).images[0]
                 
                 # Clear loading animation and progress
                 loading_container.empty()
