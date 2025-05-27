@@ -47,7 +47,7 @@ def load_model(model_name, img2img=False, inpainting=False):
                 # Load base model
                 base_pipe = DiffusionPipeline.from_pretrained(
                     "stabilityai/stable-diffusion-xl-base-1.0",
-                    torch_dtype=torch.float16,
+                    torch_dtype=torch.float32,
                     variant="fp16",
                     use_safetensors=True,
                     token=hf_token

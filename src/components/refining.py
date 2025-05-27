@@ -66,8 +66,9 @@ def render_refining_tab():
         # Output section
         st.markdown(load_template("cards").split("<!-- Output Card -->")[1].split("<!-- Description Card -->")[0], unsafe_allow_html=True)
         
-        # Placeholder for the generated image
-        image_placeholder = st.empty()
+        # Placeholder for the generated images
+        base_image_placeholder = st.empty()
+        refined_image_placeholder = st.empty()
         
         if generate_button and prompt:
             # Create loading animation
@@ -120,50 +121,56 @@ def render_refining_tab():
                         )
                 
                 # Set deterministic seed
-                generator = torch.Generator(device="cpu").manual_seed(seed)
+                generator = torch.Generator(device="cuda" if torch.cuda.is_available() else "cpu").manual_seed(seed)
                 
                 # Generate image with base model
                 with torch.no_grad():
-                    # First stage: Generate with base model
+                    # BASE: output_type="latent" for refiner, decode for display
                     progress_text.markdown(
                         '<span style="color: #FFD700">Stage 1: Generating with base model...</span>', 
                         unsafe_allow_html=True
                     )
-                    base_image = base_pipe(
+                    base_result = base_pipe(
                         prompt=prompt,
                         num_inference_steps=num_inference_steps,
                         guidance_scale=guidance_scale,
                         denoising_end=denoising_end,
+                        output_type="latent",
                         generator=generator,
                         callback=progress_callback,
-                        callback_steps=1
-                    ).images[0]
+                        callback_steps=1,
+                        return_dict=True
+                    )
+                    latents = base_result.images
+                    # Decode latent to PIL for display
+                    base_pil = base_pipe.decode_latents(latents)
+                    base_pil = base_pipe.numpy_to_pil(base_pil)[0]
+                    base_image_placeholder.image(base_pil, caption="Base Image", use_container_width=True)
                     
-                    # Second stage: Refine with refiner model
+                    # REFINER: input latent, output PIL
                     progress_text.markdown(
                         '<span style="color: #FFD700">Stage 2: Refining with refiner model...</span>', 
                         unsafe_allow_html=True
                     )
-                    refined_image = refiner_pipe(
+                    refined_result = refiner_pipe(
                         prompt=prompt,
                         num_inference_steps=num_inference_steps,
                         guidance_scale=guidance_scale,
                         denoising_start=denoising_end,
-                        image=base_image,
+                        image=latents,
                         generator=generator,
                         callback=progress_callback,
-                        callback_steps=1
-                    ).images[0]
+                        callback_steps=1,
+                        return_dict=True
+                    )
+                    refined_image = refined_result.images[0]
+                    refined_image_placeholder.image(refined_image, caption="Refined Image", use_container_width=True)
                 
                 # Clear loading animation and progress
                 loading_container.empty()
                 progress_bar.empty()
                 progress_text.empty()
                 time_text.empty()
-                
-                # Create and display image grid
-                image_grid = make_image_grid([base_image, refined_image], rows=1, cols=2)
-                image_placeholder.image(image_grid, caption="Base | Refined", use_container_width=True)
                 
                 # Add download button
                 buf = io.BytesIO()
