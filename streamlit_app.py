@@ -5,6 +5,7 @@ from src.components.text_to_image import render_text_to_image_tab
 from src.components.image_to_image import render_image_to_image_tab
 from src.components.inpainting import render_inpainting_tab
 from src.components.refining import render_refining_tab
+from src.components.two_text_encoders import render_two_text_encoders_tab
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,7 +50,8 @@ st.title("🎨 AI Image Generator")
 st.markdown(load_template("cards").split("<!-- Description Card -->")[1], unsafe_allow_html=True)
 
 # Tab selection
-tab1, tab2, tab3, tab4 = st.tabs(["Text to Image", "Image to Image", "Inpainting", "Refining"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "Text to Image", "Image to Image", "Inpainting", "Refining", "Two Text-Encoders"])
 
 # Render tabs
 with tab1:
@@ -62,4 +64,7 @@ with tab3:
     render_inpainting_tab()
 
 with tab4:
-    render_refining_tab() 
+    render_refining_tab()
+
+with tab5:
+    render_two_text_encoders_tab() 
